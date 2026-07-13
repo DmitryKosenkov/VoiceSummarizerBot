@@ -1,4 +1,4 @@
-# WhisperBot
+# VoiceSummarizerBot
 
 A Telegram bot that transcribes voice messages and audio files using
 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and generates a
