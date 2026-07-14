@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from google import genai
 from google.genai import errors as genai_errors
 
-from app.services.prompts import SUMMARY_PROMPT_TEMPLATE
+from app.services.prompts import build_meeting_summary_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +33,18 @@ class GeminiSummarizer(Summarizer):
         self,
         api_key: str,
         model: str = "gemini-3.5-flash",
+        language: str = "ru",
         max_attempts: int = 3,
         retry_delay_seconds: float = 5.0,
     ):
         self.client = genai.Client(api_key=api_key)
         self.model = model
+        self.language = language
         self.max_attempts = max_attempts
         self.retry_delay_seconds = retry_delay_seconds
 
     def summarize(self, text: str) -> str | None:
-        prompt = SUMMARY_PROMPT_TEMPLATE.format(text=text)
+        prompt = build_meeting_summary_prompt(text, self.language)
         response = self._generate_with_retry(prompt)
 
         if not response.text:
