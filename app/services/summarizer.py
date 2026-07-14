@@ -43,7 +43,7 @@ class GeminiSummarizer(Summarizer):
         self.max_attempts = max_attempts
         self.retry_delay_seconds = retry_delay_seconds
 
-    def summarize(self, text: str) -> str | None:
+    def summarize(self, text: str) -> str:
         prompt = build_meeting_summary_prompt(text, self.language)
         response = self._generate_with_retry(prompt)
 
