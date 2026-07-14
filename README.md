@@ -105,7 +105,7 @@ All settings are read from environment variables (see `.env.example`):
 | `GEMINI_API_KEY`              | -                  | Gemini API key                          |
 | `WHISPER_MODEL_SIZE`          | `large-v3-turbo`   | faster-whisper model size               |
 | `WHISPER_LANGUAGE`            | `ru`               | Language for transcription and summary  |
-| `GEMINI_MODEL`                 | `gemini-3.5-flash` | Gemini model used for summarization     |
+| `GEMINI_MODEL`                 | `gemini-3.1-flash-lite` | Gemini model used for summarization     |
 | `GEMINI_MAX_ATTEMPTS`          | `3`                | Retry attempts on transient errors      |
 | `GEMINI_RETRY_DELAY_SECONDS`   | `5`                | Base delay between retries              |
 | `DOWNLOADS_DIR`                | `downloads`        | Local directory for downloaded audio    |
