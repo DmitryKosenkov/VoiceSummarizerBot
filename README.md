@@ -10,19 +10,23 @@ summary with Google Gemini.
   `.ogg`, `.m4a`, `.flac`, `.webm`, `.opus`, `.aac`)
 - Local, offline transcription via faster-whisper
 - Summary generation via Gemini, with automatic retry on transient API errors
+- Delivers the transcript as a `.txt` file and the summary as a `.docx` file
 - `/retry` re-generates a summary from the cached transcript without
   re-uploading the audio
-- `/docx` exports the last summary as a Word document
+- `/txt` and `/docx` re-send the last transcript/summary at any time
 
 ## Project layout
 
 ```
 main.py                     entry point
 
-docx_export/                 standalone Markdown -> Word converter,
-                              no dependency on app/
-  converter.py
-  __main__.py                 CLI: python -m docx_export input.md output.docx
+exporters/                   standalone converters, no dependency on app/
+  docx_export/                Markdown -> Word converter (needs python-docx)
+    converter.py
+    __main__.py                 CLI: python -m exporters.docx_export input.md output.docx
+  txt_export/                  transcript -> .txt converter (stdlib only)
+    converter.py
+    __main__.py                 CLI: python -m exporters.txt_export input.txt output.txt
 
 app/
   core/
@@ -40,12 +44,9 @@ app/
   bot/
     handlers.py                Telegram message handlers
     messages.py                  user-facing text
-    transcript_cache.py          per-user transcript cache, used by /retry
+    transcript_cache.py          per-user transcript cache, used by /retry and /txt
     summary_cache.py             per-user summary cache, used by /docx
     run.py                     builds and starts the bot
-
-  utils/
-    text_utils.py                chunk_text() helper
 ```
 
 ## Architecture
@@ -58,8 +59,8 @@ current implementations; swapping either provider means adding one class in
 `app/pipeline.py` contains the transcribe/summarize logic with no
 dependency on Telegram or aiogram. `app/bot/handlers.py` calls into it and
 handles only Telegram-specific concerns (message formatting, file download,
-chunking). A future FastAPI adapter could call the same pipeline functions
-from an HTTP route without any changes to `app/pipeline.py` or
+file delivery). A future FastAPI adapter could call the same pipeline
+functions from an HTTP route without any changes to `app/pipeline.py` or
 `app/services/`.
 
 The Gemini prompt (`app/services/prompts.py`) asks for a structured
@@ -70,22 +71,28 @@ Items, Next Steps - with inline `**bold**`/`*italic*` spans for labels like
 so Gemini gets an unambiguous instruction like "Russian" rather than the
 raw code `ru`.
 
-`docx_export/` converts that Markdown into a Word document: real headings,
-bullet lists, and bold/italic formatting instead of literal asterisks. It's
-a separate top-level package with no import from `app/` and no dependency
-beyond `python-docx`, so it works independently of the bot:
+`docx_export` and `txt_export` each convert one of those results into a
+file: real headings, bullet lists, and bold/italic formatting instead of
+literal asterisks for the summary; a plain UTF-8 file for the transcript.
+Both live under `exporters/` - grouped there for discoverability, but kept
+as separate subpackages rather than merged into one module, so importing
+`txt_export` never requires `python-docx` to be installed. Neither imports
+from `app/`, so both work independently of the bot:
 
 ```bash
-python -m docx_export input.md output.docx
+python -m exporters.docx_export input.md output.docx
+python -m exporters.txt_export input.txt output.txt
 ```
 
 ```python
-from docx_export import render_markdown_summary_to_docx
-docx_bytes = render_markdown_summary_to_docx(markdown_text)
+from exporters.docx_export import render_markdown_summary_to_docx
+from exporters.txt_export import render_transcript_to_txt
 ```
 
-Inside this project, `app/bot/handlers.py` calls that same function when a
-user sends `/docx`, using the summary cached in `app/bot/summary_cache.py`.
+Inside this project, `app/bot/handlers.py` sends the transcript and summary
+as files by default, and calls the same functions again when a user sends
+`/txt` or `/docx`, using the caches in `app/bot/transcript_cache.py` and
+`app/bot/summary_cache.py`.
 
 ## Setup
 
@@ -99,14 +106,14 @@ python main.py
 
 All settings are read from environment variables (see `.env.example`):
 
-| Variable                     | Default           | Description                           |
-|-------------------------------|--------------------|-----------------------------------------|
-| `TOKEN`                       | -                  | Telegram bot token                      |
-| `GEMINI_API_KEY`              | -                  | Gemini API key                          |
-| `WHISPER_MODEL_SIZE`          | `large-v3-turbo`   | faster-whisper model size               |
-| `WHISPER_LANGUAGE`            | `ru`               | Language for transcription and summary  |
-| `GEMINI_MODEL`                 | `gemini-3.1-flash-lite` | Gemini model used for summarization     |
-| `GEMINI_MAX_ATTEMPTS`          | `3`                | Retry attempts on transient errors      |
-| `GEMINI_RETRY_DELAY_SECONDS`   | `5`                | Base delay between retries              |
-| `DOWNLOADS_DIR`                | `downloads`        | Local directory for downloaded audio    |
+| Variable                     | Default             | Description                             |
+|-------------------------------|----------------------|-------------------------------------------|
+| `TOKEN`                       | -                    | Telegram bot token                        |
+| `GEMINI_API_KEY`              | -                    | Gemini API key                            |
+| `WHISPER_MODEL_SIZE`          | `large-v3-turbo`     | faster-whisper model size                 |
+| `WHISPER_LANGUAGE`            | `ru`                 | Language for transcription and summary    |
+| `GEMINI_MODEL`                | `gemini-3.1-flash-lite` | Gemini model used for summarization    |
+| `GEMINI_MAX_ATTEMPTS`         | `3`                  | Retry attempts on transient errors        |
+| `GEMINI_RETRY_DELAY_SECONDS`  | `5`                  | Base delay between retries                |
+| `DOWNLOADS_DIR`               | `downloads`          | Local directory for downloaded audio      |
 

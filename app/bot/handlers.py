@@ -14,8 +14,8 @@ from app.core.config import settings
 from app.pipeline import TranscriptionError, summarize_async, transcribe_async
 from app.services.summarizer import Summarizer, SummarizationError
 from app.services.transcriber import Transcriber
-from app.utils.text_utils import chunk_text
-from docx_export import render_markdown_summary_to_docx
+from exporters.docx_export import render_markdown_summary_to_docx
+from exporters.txt_export import render_transcript_to_txt
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,14 @@ def build_router(transcriber: Transcriber, summarizer: Summarizer) -> Router:
             await message.answer(messages.NOTHING_TO_EXPORT)
             return
         await send_summary_as_docx(message, summary)
+
+    @router.message(Command("txt"))
+    async def txt_command(message: types.Message):
+        text = transcript_cache.get(message.from_user.id)
+        if not text:
+            await message.answer(messages.NOTHING_TO_EXPORT_TXT)
+            return
+        await send_transcript_as_txt(message, text)
 
     @router.message(F.voice)
     async def handle_voice(message: types.Message):
@@ -93,7 +101,7 @@ async def handle_incoming_audio(
 
         text = await transcribe_async(local_path, transcriber)
         transcript_cache.store(message.from_user.id, text)
-        await send_chunked(message, messages.TRANSCRIPT_HEADER, text)
+        await send_transcript_as_txt(message, text)
 
         await message.answer(messages.GENERATING_SUMMARY)
         await reply_with_summary(message, text, summarizer)
@@ -129,15 +137,8 @@ async def reply_with_summary(message: types.Message, text: str, summarizer: Summ
 
     transcript_cache.clear(message.from_user.id)
     summary_cache.store(message.from_user.id, summary)
-    await send_chunked(message, messages.SUMMARY_HEADER, summary)
-    await message.answer(messages.SUMMARY_DOCX_HINT)
-
-
-async def send_chunked(message: types.Message, header: str, text: str) -> None:
-    await message.answer(header)
-    for chunk in chunk_text(text, max_size=4000):
-        await message.answer(chunk)
-        await asyncio.sleep(0.5)
+    await send_summary_as_docx(message, summary)
+    await message.answer(messages.FILES_AVAILABLE_AGAIN_HINT)
 
 
 async def send_summary_as_docx(message: types.Message, summary_markdown: str) -> None:
@@ -147,3 +148,9 @@ async def send_summary_as_docx(message: types.Message, summary_markdown: str) ->
     )
     document = types.BufferedInputFile(docx_bytes, filename=messages.DOCX_FILENAME)
     await message.answer_document(document=document, caption=messages.DOCX_CAPTION)
+
+
+async def send_transcript_as_txt(message: types.Message, transcript: str) -> None:
+    txt_bytes = render_transcript_to_txt(transcript)
+    document = types.BufferedInputFile(txt_bytes, filename=messages.TXT_FILENAME)
+    await message.answer_document(document=document, caption=messages.TXT_CAPTION)
