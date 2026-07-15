@@ -13,7 +13,6 @@ summary with Google Gemini.
 - Delivers the transcript as a `.txt` file and the summary as a `.docx` file
 - `/retry` re-generates a summary from the cached transcript without
   re-uploading the audio
-- `/txt` and `/docx` re-send the last transcript/summary at any time
 
 ## Project layout
 
@@ -44,8 +43,7 @@ app/
   bot/
     handlers.py                Telegram message handlers
     messages.py                  user-facing text
-    transcript_cache.py          per-user transcript cache, used by /retry and /txt
-    summary_cache.py             per-user summary cache, used by /docx
+    transcript_cache.py          per-user transcript cache, used by /retry
     run.py                     builds and starts the bot
 ```
 
@@ -89,10 +87,8 @@ from exporters.docx_export import render_markdown_summary_to_docx
 from exporters.txt_export import render_transcript_to_txt
 ```
 
-Inside this project, `app/bot/handlers.py` sends the transcript and summary
-as files by default, and calls the same functions again when a user sends
-`/txt` or `/docx`, using the caches in `app/bot/transcript_cache.py` and
-`app/bot/summary_cache.py`.
+Inside this project, `app/bot/handlers.py` calls both functions once per
+request, sending the transcript and summary as files by default.
 
 ## Setup
 

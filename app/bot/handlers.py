@@ -9,7 +9,7 @@ from pathlib import Path
 from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart
 
-from app.bot import messages, summary_cache, transcript_cache
+from app.bot import messages, transcript_cache
 from app.core.config import settings
 from app.pipeline import TranscriptionError, summarize_async, transcribe_async
 from app.services.summarizer import Summarizer, SummarizationError
@@ -38,22 +38,6 @@ def build_router(transcriber: Transcriber, summarizer: Summarizer) -> Router:
             return
         await message.answer(messages.GENERATING_SUMMARY)
         await reply_with_summary(message, text, summarizer)
-
-    @router.message(Command("docx"))
-    async def docx_command(message: types.Message):
-        summary = summary_cache.get(message.from_user.id)
-        if not summary:
-            await message.answer(messages.NOTHING_TO_EXPORT)
-            return
-        await send_summary_as_docx(message, summary)
-
-    @router.message(Command("txt"))
-    async def txt_command(message: types.Message):
-        text = transcript_cache.get(message.from_user.id)
-        if not text:
-            await message.answer(messages.NOTHING_TO_EXPORT_TXT)
-            return
-        await send_transcript_as_txt(message, text)
 
     @router.message(F.voice)
     async def handle_voice(message: types.Message):
@@ -136,9 +120,7 @@ async def reply_with_summary(message: types.Message, text: str, summarizer: Summ
         return
 
     transcript_cache.clear(message.from_user.id)
-    summary_cache.store(message.from_user.id, summary)
     await send_summary_as_docx(message, summary)
-    await message.answer(messages.FILES_AVAILABLE_AGAIN_HINT)
 
 
 async def send_summary_as_docx(message: types.Message, summary_markdown: str) -> None:
