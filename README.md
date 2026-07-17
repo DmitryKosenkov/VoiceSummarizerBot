@@ -19,15 +19,15 @@ summary with Google Gemini.
 ```
 main.py                     entry point
 
-exporters/                   standalone converters, no dependency on app/
-  docx_export/                Markdown -> Word converter (needs python-docx)
-    converter.py
-    __main__.py                 CLI: python -m exporters.docx_export input.md output.docx
-  txt_export/                  transcript -> .txt converter (stdlib only)
-    converter.py
-    __main__.py                 CLI: python -m exporters.txt_export input.txt output.txt
-
 app/
+  exporters/                 standalone converters, no import from app.bot
+    docx_export/               Markdown -> Word converter (needs python-docx)
+      converter.py
+      __main__.py                 CLI: python -m app.exporters.docx_export input.md output.docx
+    txt_export/                 transcript -> .txt converter (stdlib only)
+      converter.py
+      __main__.py                 CLI: python -m app.exporters.txt_export input.txt output.txt
+
   core/
     config.py                settings, loaded from .env
     logging_config.py        logging setup
@@ -72,19 +72,21 @@ raw code `ru`.
 `docx_export` and `txt_export` each convert one of those results into a
 file: real headings, bullet lists, and bold/italic formatting instead of
 literal asterisks for the summary; a plain UTF-8 file for the transcript.
-Both live under `exporters/` - grouped there for discoverability, but kept
-as separate subpackages rather than merged into one module, so importing
-`txt_export` never requires `python-docx` to be installed. Neither imports
-from `app/`, so both work independently of the bot:
+Both live under `app/exporters/` - grouped there for discoverability, and
+kept as separate subpackages rather than merged into one module, so
+importing `txt_export` never requires `python-docx` to be installed.
+Neither imports from `app.bot` (the only Telegram-specific part of the
+project), so both work independently of the bot, the same way
+`app/pipeline.py` and `app/services/` do:
 
 ```bash
-python -m exporters.docx_export input.md output.docx
-python -m exporters.txt_export input.txt output.txt
+python -m app.exporters.docx_export input.md output.docx
+python -m app.exporters.txt_export input.txt output.txt
 ```
 
 ```python
-from exporters.docx_export import render_markdown_summary_to_docx
-from exporters.txt_export import render_transcript_to_txt
+from app.exporters.docx_export import render_markdown_summary_to_docx
+from app.exporters.txt_export import render_transcript_to_txt
 ```
 
 Inside this project, `app/bot/handlers.py` calls both functions once per

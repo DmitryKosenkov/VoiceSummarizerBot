@@ -14,8 +14,8 @@ from app.core.config import settings
 from app.pipeline import TranscriptionError, summarize_async, transcribe_async
 from app.services.summarizer import Summarizer, SummarizationError
 from app.services.transcriber import Transcriber
-from exporters.docx_export import render_markdown_summary_to_docx
-from exporters.txt_export import render_transcript_to_txt
+from app.exporters.docx_export import render_markdown_summary_to_docx
+from app.exporters.txt_export import render_transcript_to_txt
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
-"""Usage: python -m exporters.txt_export <input.txt> <output.txt>"""
+"""Usage: python -m app.exporters.txt_export <input.txt> <output.txt>"""
 import sys
 
-from exporters.txt_export.converter import render_transcript_to_txt
+from app.exporters.txt_export.converter import render_transcript_to_txt
 
 
 def main() -> None:
     if len(sys.argv) != 3:
-        print("Usage: python -m exporters.txt_export <input.txt> <output.txt>")
+        print("Usage: python -m app.exporters.txt_export <input.txt> <output.txt>")
         raise SystemExit(1)
 
     input_path, output_path = sys.argv[1], sys.argv[2]

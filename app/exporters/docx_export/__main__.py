@@ -1,12 +1,12 @@
-"""Usage: python -m exporters.docx_export <input.md> <output.docx>"""
+"""Usage: python -m app.exporters.docx_export <input.md> <output.docx>"""
 import sys
 
-from exporters.docx_export.converter import render_markdown_summary_to_docx
+from app.exporters.docx_export.converter import render_markdown_summary_to_docx
 
 
 def main() -> None:
     if len(sys.argv) != 3:
-        print("Usage: python -m exporters.docx_export <input.md> <output.docx>")
+        print("Usage: python -m app.exporters.docx_export <input.md> <output.docx>")
         raise SystemExit(1)
 
     input_path, output_path = sys.argv[1], sys.argv[2]
