@@ -32,7 +32,7 @@ class GeminiSummarizer(Summarizer):
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-3.5-flash",
+        model: str = "gemini-3.1-flash-lite",
         language: str = "ru",
         max_attempts: int = 3,
         retry_delay_seconds: float = 5.0,
